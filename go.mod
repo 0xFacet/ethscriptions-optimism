@@ -235,7 +235,7 @@ require (
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
 
-replace github.com/ethereum/go-ethereum v1.14.8 => github.com/0xFacet/facet-geth v1.0.2-0.20250725163559-0893167c2f4f
+replace github.com/ethereum/go-ethereum v1.14.8 => github.com/ethscriptions-protocol/ethscriptions-geth v0.0.0-20251125151508-ad65ca2dcc4a
 
 // replace github.com/ethereum/go-ethereum => ../op-geth
 

@@ -22,7 +22,7 @@ const (
 	L1InfoFuncEcotoneSignature = "setL1BlockValuesEcotone()"
 	L1InfoArguments            = 8
 	L1InfoBedrockLen           = 4 + 32*L1InfoArguments
-	L1InfoEcotoneLen           = 292 // Bluebird
+	L1InfoEcotoneLen           = 4 + 4 + 4 + 8 + 8 + 8 + 32 + 32 + 32 + 32 // Ecotone (164 bytes)
 )
 
 var (
@@ -138,9 +138,9 @@ func (info *L1BlockInfo) unmarshalBinaryBedrock(data []byte) error {
 	if info.L1FeeScalar, err = solabi.ReadEthBytes32(reader); err != nil {
 		return err
 	}
-	remainingBytes := reader.Len()
-	if remainingBytes != 32 {
-		return fmt.Errorf("unexpected number of remaining bytes: %d, expected: 32", remainingBytes)
+	// All bytes should be consumed
+	if reader.Len() != 0 {
+		return fmt.Errorf("unexpected trailing bytes: %d", reader.Len())
 	}
 	return nil
 }
@@ -202,8 +202,7 @@ func (info *L1BlockInfo) marshalBinaryEcotone() ([]byte, error) {
 }
 
 func (info *L1BlockInfo) unmarshalBinaryEcotone(data []byte) error {
-	// Support both old (196 bytes) and new (292 bytes) Ecotone formats
-	if len(data) != 196 && len(data) != L1InfoEcotoneLen {
+	if len(data) != L1InfoEcotoneLen {
 		return fmt.Errorf("data is unexpected length: %d", len(data))
 	}
 	r := bytes.NewReader(data)
@@ -240,13 +239,9 @@ func (info *L1BlockInfo) unmarshalBinaryEcotone(data []byte) error {
 	if info.BatcherAddr, err = solabi.ReadAddress(r); err != nil {
 		return err
 	}
-	remainingBytes := r.Len()
-	// For 196-byte format, expect 32 remaining bytes
-	// For 292-byte format, expect 128 remaining bytes
-	if len(data) == 196 && remainingBytes != 32 {
-		return fmt.Errorf("unexpected number of remaining bytes: %d, expected: 32", remainingBytes)
-	} else if len(data) == L1InfoEcotoneLen && remainingBytes != 128 {
-		return fmt.Errorf("unexpected number of remaining bytes: %d, expected: 128", remainingBytes)
+	// All bytes should be consumed
+	if r.Len() != 0 {
+		return fmt.Errorf("unexpected trailing bytes: %d", r.Len())
 	}
 	return nil
 }

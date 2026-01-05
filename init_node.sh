@@ -6,22 +6,34 @@ is_container() {
     [ -f /.dockerenv ] || grep -q docker /proc/1/cgroup || [ -f "/usr/local/bin/op-node" ]
 }
 
+# L2_NETWORK can be "facet" or "ethscriptions" (default: facet)
+L2_NETWORK=${L2_NETWORK:-"ethscriptions"}
+
 # Function to get rollup config path
 get_rollup_config() {
+    local base_path
     if is_container; then
+        base_path="/app/op-node"
+    else
+        base_path="./op-node"
+    fi
+
+    if [ "$L2_NETWORK" = "ethscriptions" ]; then
         if [ "$L1_NETWORK" = "mainnet" ]; then
-            echo "/app/op-node/facet-mainnet-rollup-config.json"
+            echo "$base_path/ethscriptions-mainnet-rollup-config.json"
         else
-            echo "/app/op-node/facet-sepolia-rollup-config.json"
+            echo "$base_path/ethscriptions-sepolia-rollup-config.json"
         fi
     else
+        # Default to facet
         if [ "$L1_NETWORK" = "mainnet" ]; then
-            echo "./op-node/facet-mainnet-rollup-config.json"
+            echo "$base_path/facet-mainnet-rollup-config.json"
         else
-            echo "./op-node/facet-sepolia-rollup-config.json"
+            echo "$base_path/facet-sepolia-rollup-config.json"
         fi
     fi
 }
+
 # Check if we're running in a Docker container
 if is_container; then
     echo "Running in Docker environment, skipping env file sourcing"
@@ -34,10 +46,10 @@ else
     else
         echo "Warning: .envrc file not found. If you're in a dev environment, this might be an issue."
     fi
-    
+
     echo "Building op-node..."
     make -C op-node op-node
-    
+
     OP_NODE_BIN="./op-node/bin/op-node"
     ROLLUP_CONFIG=$(get_rollup_config $L1_NETWORK)
 fi
@@ -48,6 +60,7 @@ if [ ! -f "$ROLLUP_CONFIG" ]; then
     exit 1
 fi
 
+echo "Using L2 network: $L2_NETWORK"
 echo "Using rollup config: $ROLLUP_CONFIG"
 
 ADDITIONAL_FLAGS=${ADDITIONAL_FLAGS:-""}
@@ -69,6 +82,7 @@ fi
 
 $OP_NODE_BIN \
   --l1.beacon.ignore=true \
+  --l1.trustrpc=true \
   --rpc.addr=0.0.0.0 \
   --rpc.port=${PORT:-9545} \
   --rollup.config "$ROLLUP_CONFIG" \
