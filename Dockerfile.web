@@ -29,15 +29,17 @@ WORKDIR /app
 # Install necessary runtime dependencies
 RUN apk add --no-cache ca-certificates bash make
 
+# Create non-root user first
+RUN adduser -D myuser
+
 # Copy the built binary from the builder stage
 COPY --from=builder /app/op-node/bin/op-node /usr/local/bin/
 
-# Copy both rollup config files
-COPY op-node/facet-mainnet-rollup-config.json /app/op-node/facet-mainnet-rollup-config.json
-COPY op-node/facet-sepolia-rollup-config.json /app/op-node/facet-sepolia-rollup-config.json
+# Copy rollup config files with correct ownership
+COPY --chown=myuser:myuser op-node/ethscriptions-mainnet-rollup-config.json /app/op-node/ethscriptions-mainnet-rollup-config.json
 
 # Copy the init_node.sh script
-COPY init_node.sh /app/init_node.sh
+COPY --chown=myuser:myuser init_node.sh /app/init_node.sh
 
 # Make sure the init_node.sh script is executable
 RUN chmod +x /app/init_node.sh
@@ -45,10 +47,6 @@ RUN chmod +x /app/init_node.sh
 # Expose necessary ports
 EXPOSE 8545 9545
 
-# Set environment variables with default values
-# ENV OP_NODE_L2_ENGINE_RPC=https://sepolia.facet.org
-
-RUN adduser -D myuser
 USER myuser
 
 # Set the entrypoint to the init_node.sh script
